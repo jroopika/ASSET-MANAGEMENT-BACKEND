@@ -58,7 +58,7 @@ router.get("/generate-qr/:id", async (req, res) => {
     const asset = await Asset.findById(req.params.id);
     if (!asset) return res.status(404).json({ message: "Asset not found" });
 
-    const qrData = `http://localhost:5000/asset/${asset._id}`;
+    const qrData = `https://asset-management-backend-qezn.onrender.com/asset/${asset._id}`;
     const qrCode = await QRCode.toDataURL(qrData);
 
     asset.qrCode = qrCode;
