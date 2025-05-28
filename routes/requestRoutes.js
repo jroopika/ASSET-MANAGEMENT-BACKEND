@@ -202,4 +202,20 @@ router.put("/:id/reject", async (req, res) => {
   }
 });
 
+// ✅ 8️⃣ Fetch all approved or assigned requests for HOD dashboard
+router.get("/approved", async (req, res) => {
+  try {
+    const approvedRequests = await Request.find({
+      status: { $in: ["approved", "assigned"] }
+    })
+      .populate("userId", "name email")
+      .sort({ requestedAt: -1 });
+
+    res.status(200).json(approvedRequests);
+  } catch (error) {
+    console.error("Error in GET /approved:", error.message);
+    res.status(500).json({ error: "Failed to fetch approved requests" });
+  }
+});
+
 module.exports = router;
