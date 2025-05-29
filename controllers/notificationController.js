@@ -60,3 +60,15 @@ exports.deleteNotification = async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 };
+
+// Get all notifications
+exports.getAllNotifications = async (req, res) => {
+  try {
+    const notifications = await Notification.find()
+      .populate('userId', 'name')
+      .sort({ timestamp: -1 });
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching all notifications', error: error.message });
+  }
+};
