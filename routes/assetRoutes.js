@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Asset = require("../models/Asset");
+const Request = require("../models/Request"); // Import Request model
 const QRCode = require('qrcode');
 
 // ✅ Fetch all assets
@@ -99,6 +100,20 @@ router.delete("/:id", async (req, res) => {
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
+});
+
+// 🆕 Get Asset Summary for User
+router.get('/user/:userId', async (req, res) => {
+  const { userId } = req.params;
+  // Only assets assigned to this user
+  const assignedAssets = await Asset.find({ assignedTo: userId });
+  // Only requests made by this user and still pending
+  const pendingRequests = await Request.find({ userId, status: 'pending' });
+  res.json({
+    totalAssets: assignedAssets.length,
+    assigned: assignedAssets.length,
+    pendingRequests: pendingRequests.length
+  });
 });
 
 module.exports = router;
