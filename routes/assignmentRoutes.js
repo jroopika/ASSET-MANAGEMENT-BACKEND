@@ -4,7 +4,26 @@ const assignmentController = require("../controllers/assignmentController");
 const Assignment = require('../models/Assignment'); // Ensure this import is correct based on the file structure
 
 // Assign asset (Admin)
-router.post("/assign", assignmentController.createAssignment);
+router.post("/assign", async (req, res) => {
+    const { assetId, userId } = req.body;
+
+    try {
+        // Create the assignment
+        const assignment = await assignmentController.createAssignment(req, res);
+
+        // If assignment is successful, update the asset status
+        if (assignment) {
+            const asset = await Asset.findById(assetId);
+            // When assigning an asset
+            asset.status = "assigned";
+            asset.assignedTo = userId;
+            await asset.save();
+        }
+    } catch (error) {
+        console.error("Error in assigning asset:", error);
+        return res.status(500).json({ error: "Failed to assign asset" });
+    }
+});
 
 // Get all assignments
 router.get("/", assignmentController.getAllAssignments);
