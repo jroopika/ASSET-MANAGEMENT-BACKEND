@@ -17,11 +17,12 @@ router.post("/request", async (req, res) => {
     const newRequest = new Request({ userId, assetType, reason });
     await newRequest.save();
 
+    // User Requests an Asset
     await Log.create({
       userId,
       action: "Requested Asset",
       details: `User requested an asset of type: ${assetType}`,
-      timestamp: new Date(),
+      date: new Date(),
     });
 
     res.status(201).json({ message: "Asset request submitted successfully" });
@@ -126,6 +127,7 @@ router.put("/assignAsset/:requestId", async (req, res) => {
       return res.status(400).json({ message: "Request must be approved by HOD before assignment" });
     }
 
+    // Find an available asset of the requested type
     const asset = await Asset.findOne({ type: request.assetType, status: "available" });
     if (!asset) {
       return res.status(400).json({ message: "No available asset of requested type" });
@@ -135,11 +137,13 @@ router.put("/assignAsset/:requestId", async (req, res) => {
     asset.assignedTo = request.userId;
     await asset.save();
 
+    // Admin assigns the asset to the user after HOD approval
     await Log.create({
       userId: adminId,
+      assetId: asset._id,
       action: "Assigned Asset to User",
       details: `Admin assigned asset of type ${asset.type} to user ${request.userId}`,
-      timestamp: new Date(),
+      date: new Date(),
     });
 
     request.status = "assigned";
@@ -162,17 +166,46 @@ router.put("/:id/approve", async (req, res) => {
       return res.status(400).json({ message: "Cannot approve a rejected request" });
     }
 
+    // Set request as approved
     request.status = "approved";
     await request.save();
 
+    // Try to auto-assign an available asset
+    const asset = await Asset.findOne({
+      $or: [{ name: request.assetType }, { type: request.assetType }],
+      status: "available"
+    });
+    if (asset) {
+      asset.status = "assigned";
+      asset.assignedTo = request.userId;
+      await asset.save();
+
+      request.status = "assigned";
+      await request.save();
+
+      // Optionally, create an assignment record if you use Assignment model
+      // await Assignment.create({ assetId: asset._id, userId: request.userId, assignedBy: req.user._id });
+
+      // Auto-assign after HOD approval
+      await Log.create({
+        userId: request.userId,
+        assetId: asset._id,
+        action: "Auto-assigned asset after HOD approval",
+        details: `Asset ${asset._id} assigned to user ${request.userId}`,
+        date: new Date(),
+      });
+
+      return res.status(200).json({ message: "Request approved and asset assigned automatically" });
+    }
+
     await Log.create({
       userId: request.userId,
-      action: "HOD Approved Request",
-      details: `Approved request for ${request.assetType}`,
-      timestamp: new Date(),
+      action: "HOD Approved Request (no asset available)",
+      details: `Approved request for ${request.assetType}, but no asset available`,
+      date: new Date(),
     });
 
-    res.status(200).json({ message: "Request approved successfully" });
+    res.status(200).json({ message: "Request approved, but no available asset to assign" });
   } catch (error) {
     console.error("Error approving request:", error.message);
     res.status(500).json({ error: error.message });
@@ -192,7 +225,7 @@ router.put("/:id/reject", async (req, res) => {
       userId: request.userId,
       action: "HOD Rejected Request",
       details: `Rejected request for ${request.assetType}`,
-      timestamp: new Date(),
+      date: new Date(),
     });
 
     res.status(200).json({ message: "Request rejected successfully" });

@@ -7,7 +7,7 @@ const app = express();
 
 // ✅ Dynamic CORS (allow all origins during development)
 app.use(cors({
-  origin: true,
+  origin: ['http://localhost:3000', 'https://asset-management-9353c.web.app'],
   credentials: true
 }));
 
@@ -22,7 +22,9 @@ const assignmentRoutes = require("./routes/assignmentRoutes");
 const logRoutes = require("./routes/logRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
 const issuesRoute = require('./routes/issues');
+
 app.use('/api/issues', issuesRoute);
+
 
 
 // ✅ Use Routes

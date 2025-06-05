@@ -33,4 +33,16 @@ router.get("/", protect, async (req, res) => {
     }
 });
 
+// Get Logs by User ID
+router.get("/user/:userId", async (req, res) => {
+    const { userId } = req.params;
+    try {
+        const logs = await Log.find({ userId }).populate('userId', 'name').sort({ timestamp: -1 });
+        res.status(200).json(logs);
+    } catch (error) {
+        console.error("Error fetching logs by user ID:", error);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 module.exports = router;
